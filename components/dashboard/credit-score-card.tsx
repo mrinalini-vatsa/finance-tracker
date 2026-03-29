@@ -13,13 +13,11 @@ function getCreditScoreInfo(score: number): {
   color: string
   bgColor: string
 } {
-  if (score >= 800)
+  if (score >= 750)
     return { label: "Excellent", color: "text-emerald-500", bgColor: "bg-emerald-500" }
-  if (score >= 740)
-    return { label: "Very Good", color: "text-emerald-400", bgColor: "bg-emerald-400" }
-  if (score >= 670)
+  if (score >= 650)
     return { label: "Good", color: "text-primary", bgColor: "bg-primary" }
-  if (score >= 580)
+  if (score >= 550)
     return { label: "Fair", color: "text-amber-500", bgColor: "bg-amber-500" }
   return { label: "Poor", color: "text-rose-500", bgColor: "bg-rose-500" }
 }

@@ -79,7 +79,8 @@ export function RecentTransactions() {
             <EmptyContent>
               <EmptyTitle>No transactions yet</EmptyTitle>
               <EmptyDescription>
-                No transactions yet. Add your first transaction or explore demo data.
+                Start by adding your income and expenses to generate your financial
+                insights.
               </EmptyDescription>
               <Button asChild>
                 <Link href="/add-transaction">Add Transaction</Link>

@@ -1,5 +1,6 @@
 "use client"
 
+import { signOut, useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
 import { Moon, Sun, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,15 @@ import { Separator } from "@/components/ui/separator"
 
 export function DashboardNavbar() {
   const { setTheme, theme } = useTheme()
+  const { data: session } = useSession()
+  const userName = session?.user?.name ?? "User"
+  const userEmail = session?.user?.email ?? ""
+  const initials = userName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -39,7 +49,7 @@ export function DashboardNavbar() {
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  <User className="h-4 w-4" />
+                  {initials || <User className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -47,17 +57,14 @@ export function DashboardNavbar() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Demo User</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  demo@finflow.app
-                </p>
+                <p className="text-sm font-medium leading-none">{userName}</p>
+                <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

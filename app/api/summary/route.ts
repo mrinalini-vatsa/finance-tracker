@@ -1,6 +1,7 @@
 import { requirePrisma, type Summary } from "@/lib/db"
-import { ensureDemoData } from "@/lib/demo-data"
+import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
+import { authOptions } from "@/lib/auth"
 
 const categoryColors: Record<string, string> = {
   Salary: "var(--color-chart-1)",
@@ -18,34 +19,28 @@ const categoryColors: Record<string, string> = {
 
 function calculateCreditScore(
   savingsRate: number,
-  transactionCount: number
+  transactionCount: number,
+  expenseConsistency: number
 ): number {
-  // Base score starts at 650
-  let score = 650
-
-  // Savings rate contribution (up to +100 points)
-  if (savingsRate >= 0.3) score += 100
-  else if (savingsRate >= 0.2) score += 75
-  else if (savingsRate >= 0.1) score += 50
-  else if (savingsRate >= 0) score += 25
-  else score -= 50 // Negative savings
-
-  // Consistency contribution based on transaction count (up to +100 points)
-  if (transactionCount >= 20) score += 100
-  else if (transactionCount >= 10) score += 75
-  else if (transactionCount >= 5) score += 50
-  else score += 25
-
-  // Cap score between 300 and 850
+  const baseScore = 600
+  const savingsContribution = savingsRate * 200
+  const activityBonus = Math.min(transactionCount, 30) * 2
+  const highExpensePenalty = (1 - expenseConsistency) * 120
+  const score = baseScore + savingsContribution + activityBonus - highExpensePenalty
   return Math.max(300, Math.min(850, score))
 }
 
 export async function GET() {
   try {
     const prisma = requirePrisma()
-    await ensureDemoData()
+    const session = await getServerSession(authOptions)
+    const userId = Number(session?.user?.id)
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     const transactions = await prisma.transaction.findMany({
+      where: { userId },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     })
 
@@ -59,8 +54,25 @@ export async function GET() {
       totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0
 
     const transactionCount = transactions.length
-
-    const creditScore = calculateCreditScore(savingsRate, transactionCount)
+    const expenseTransactions = transactions.filter((item) => item.type === "expense")
+    const averageExpense =
+      expenseTransactions.length > 0
+        ? expenseTransactions.reduce((sum, item) => sum + Number(item.amount), 0) /
+          expenseTransactions.length
+        : 0
+    const expenseVariance =
+      expenseTransactions.length > 0
+        ? expenseTransactions.reduce((sum, item) => {
+            const delta = Number(item.amount) - averageExpense
+            return sum + delta * delta
+          }, 0) / expenseTransactions.length
+        : 0
+    const coefficientOfVariation =
+      averageExpense > 0 ? Math.sqrt(expenseVariance) / averageExpense : 0
+    const expenseConsistency = Math.max(0, Math.min(1, 1 - coefficientOfVariation))
+    const creditScore = Math.round(
+      calculateCreditScore(savingsRate, transactionCount, expenseConsistency)
+    )
 
     const monthlyMap = new Map<string, { month: string; income: number; expenses: number }>()
     const sixMonthsAgo = new Date()

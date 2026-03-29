@@ -58,7 +58,7 @@ export function MonthlyChart() {
       <CardContent>
         {chartData.length === 0 ? (
           <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-            <p>No transactions yet. Add your first transaction or explore demo data.</p>
+            <p>Start by adding your income and expenses to generate your financial insights.</p>
             <Button asChild size="sm">
               <Link href="/add-transaction">Add Transaction</Link>
             </Button>

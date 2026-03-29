@@ -5,16 +5,17 @@ import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { CategoryChart } from "@/components/dashboard/category-chart"
 import { RecentTransactions } from "@/components/dashboard/recent-transactions"
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
+import { Insights } from "@/components/dashboard/insights"
 
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Dashboard
+          FinFlow - Smart Finance Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Your financial overview at a glance
+          Track your personal finances with live insights
         </p>
       </div>
 
@@ -43,6 +44,8 @@ async function DashboardContent() {
           <RecentTransactions />
         </div>
       </div>
+
+      <Insights />
     </div>
   )
 }

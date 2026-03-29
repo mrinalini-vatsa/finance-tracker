@@ -1,6 +1,7 @@
 import { requirePrisma, type Transaction } from "@/lib/db"
-import { ensureDemoData, ensureDemoUser } from "@/lib/demo-data"
+import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
+import { authOptions } from "@/lib/auth"
 
 function toApiTransaction(transaction: {
   id: number
@@ -27,9 +28,14 @@ function toApiTransaction(transaction: {
 export async function GET() {
   try {
     const prisma = requirePrisma()
-    await ensureDemoData()
+    const session = await getServerSession(authOptions)
+    const userId = Number(session?.user?.id)
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     const transactions = await prisma.transaction.findMany({
+      where: { userId },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     })
 
@@ -51,6 +57,11 @@ export async function POST(request: NextRequest) {
   let rawBody: unknown
   try {
     const prisma = requirePrisma()
+    const session = await getServerSession(authOptions)
+    const sessionUserId = Number(session?.user?.id)
+    if (!sessionUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     try {
       rawBody = await request.json()
     } catch (error) {
@@ -59,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = rawBody as Record<string, unknown>
-    const { amount, type, category, description, date, userId } = body
+    const { amount, type, category, description, date } = body
 
     const missingFields: string[] = []
 
@@ -114,19 +125,9 @@ export async function POST(request: NextRequest) {
     const normalizedDescription =
       typeof description === "string" ? description.trim() : ""
 
-    const demoUserId = await ensureDemoUser()
-    let resolvedUserId = demoUserId
-
-    if (typeof userId === "number" && Number.isInteger(userId) && userId > 0) {
-      const existingUser = await prisma.user.findUnique({ where: { id: userId } })
-      if (existingUser) {
-        resolvedUserId = existingUser.id
-      }
-    }
-
     const transaction = await prisma.transaction.create({
       data: {
-        userId: resolvedUserId,
+        userId: sessionUserId,
         amount: parsedAmount,
         type,
         category: normalizedCategory,
